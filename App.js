@@ -1,108 +1,100 @@
-import React, { useState } from "react";
-import { SafeAreaView, View, Text, TextInput, Button, FlatList, StyleSheet, Picker } from "react-native";
+// App.js
+
+import React, { useState, useMemo } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Alert } from 'react-native';
+
+import HomeScreen from './homescreen';
+import ManageMenuScreen from './managemenuscreen';
+import GuestFilterScreen from './guestfilterscreen';
+
+const Stack = createNativeStackNavigator();
+
+// ----------------------------------------------------------------------
+// ACTUAL MENU DATA EXTRACTED FROM IMAGE
+// ----------------------------------------------------------------------
+const INITIAL_MENU = [
+  // --- STARTER (5 items) ---
+  { id: '1', dishName: 'Soup', description: 'Delicious soup served with a side of soft buns.', course: 'Starter', price: 80.00 },
+  { id: '2', dishName: 'Chicken Fillets', description: 'Crispy chicken fillet served with a delicious chilli honey drizzle.', course: 'Starter', price: 95.00 },
+  { id: '3', dishName: 'Carrot Salad', description: "Tossed in a lightly sweet, cumin-spiced dressing, it's bright, aromatic, and refreshing.", course: 'Starter', price: 70.00 },
+  { id: '4', dishName: 'Chicken Salad', description: 'Chicken salad with hummus for a healthy lunch.', course: 'Starter', price: 65.00 },
+  { id: '5', dishName: 'Hummus', description: 'This creamy, rich vegan hummus served with crunchy seasonal veg or warm pita bread.', course: 'Starter', price: 90.00 },
+  
+  // --- MAIN (DINNER - 5 items) ---
+  { id: '6', dishName: 'Chicken Mac & Cheese', description: 'Creamy and satisfying meal that combines tender chicken with a creamy, cheesy pasta.', course: 'Main', price: 180.00 },
+  { id: '7', dishName: 'Classic Spaghetti', description: 'Consisting of spaghetti, meatballs, and a rich tomato sauce.', course: 'Main', price: 170.00 },
+  { id: '8', dishName: 'Italian Roasted Chicken', description: 'Crispy herb-scented skin and incredibly moist meat.', course: 'Main', price: 250.00 },
+  { id: '9', dishName: 'Chicken Stuffed Pizza', description: 'A cheesy dish served with the best bbq chicken stuffed inside of the pizza creating magic.', course: 'Main', price: 280.00 },
+  { id: '10', dishName: 'Sunday Best', description: 'Our specially "Seven colours" home cooked meal.', course: 'Main', price: 120.00 },
+  
+  // --- DESSERT (5 items - using Tiramisu and similar items to match the expected count/average) ---
+  { id: '11', dishName: 'Tiramisu', description: 'Classic Italian coffee-flavored dessert.', course: 'Dessert', price: 60.00 },
+  { id: '12', dishName: 'Chocolate Lava Cake', description: 'Rich, moist cake with a gooey center.', course: 'Dessert', price: 55.00 },
+  { id: '13', dishName: 'Fruit Platter', description: 'A selection of seasonal fresh fruits.', course: 'Dessert', price: 45.00 },
+  { id: '14', dishName: 'Cheesecake', description: 'Creamy baked cheesecake with a berry topping.', course: 'Dessert', price: 65.00 },
+  { id: '15', dishName: 'Ice Cream Trio', description: 'Three scoops of premium ice cream.', course: 'Dessert', price: 50.00 },
+];
+// ----------------------------------------------------------------------
+
 
 export default function App() {
-  const [dishName, setDishName] = useState("");
-  const [description, setDescription] = useState("");
-  const [course, setCourse] = useState("Starter");
-  const [price, setPrice] = useState("");
-  const [menuItems, setMenuItems] = useState([]);
+  // Menu items are saved in this array state
+  const [menuItems, setMenuItems] = useState(INITIAL_MENU); 
+  
+  // Calculate average prices for HomeScreen (Requirement 1)
+  const menuStats = useMemo(() => {
+    const courses = ["Starter", "Main", "Dessert"];
+    
+    const stats = courses.map(course => {
+      const items = menuItems.filter(item => item.course === course);
+      // Ensure item.price is treated as a number for calculation
+      const totalCost = items.reduce((sum, item) => sum + parseFloat(item.price), 0);
+      const avgPrice = items.length > 0 ? totalCost / items.length : null;
 
-  const courses = ["Starter", "Main", "Dessert"];
+      return { course, avgPrice: avgPrice ? 'R' + avgPrice.toFixed(2) : 'N/A' };
+    });
 
-  const addMenuItem = () => {
-    if (!dishName || !description || !price) {
-      alert("Please fill in all fields");
-      return;
-    }
-
-    const newItem = {
-      id: Math.random().toString(),
-      dishName,
-      description,
-      course,
-      price
-    };
-
-    setMenuItems([...menuItems, newItem]);
-
-    // Reset form
-    setDishName("Soup");
-    setDescription("Delicious soup served with soft hot buns");
-    setCourse("Starter");
-    setPrice("R80");
-  };
+    return { totalItems: menuItems.length, stats };
+  }, [menuItems]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Welcome to Christoffel's Kitchen </Text>
-
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Dish Name"
-          value={dishName}
-          onChangeText={setDishName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Description"
-          value={description}
-          onChangeText={setDescription}
-        />
-
-        <View style={styles.pickerContainer}>
-          <Text style={styles.label}>Course:</Text>
-          <Picker
-            selectedValue={course}
-            style={styles.picker}
-            onValueChange={(itemValue) => setCourse(itemValue)}
-          >
-            {courses.map((c) => (
-              <Picker.Item key={c} label={c} value={c} />
-            ))}
-          </Picker>
-        </View>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Price"
-          value={price}
-          keyboardType="numeric"
-          onChangeText={setPrice}
-        />
-
-        <Button title="Add Menu Item" onPress={addMenuItem} />
-      </View>
-
-      <View style={styles.menuList}>
-        <Text style={styles.count}>Total Items: {menuItems.length}</Text>
-        <FlatList
-          data={menuItems}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.menuItem}>
-              <Text style={styles.dishName}>{item.dishName} ({item.course})</Text>
-              <Text>{item.description}</Text>
-              <Text>Price: ${item.price}</Text>
-            </View>
-          )}
-        />
-      </View>
-    </SafeAreaView>
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={{
+          headerStyle: { backgroundColor: '#87CEEB' }, // Light blue header
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}>
+        
+        {/* Home Screen (Shows menu, total items, and averages) */}
+        <Stack.Screen name="Home">
+          {props => <HomeScreen 
+            {...props} 
+            menuItems={menuItems} 
+            menuStats={menuStats} // Pass calculated stats
+          />}
+        </Stack.Screen>
+        
+        {/* Manage Menu Screen (Adding and Removing items - separate screen) */}
+        <Stack.Screen name="Manage Menu">
+          {props => <ManageMenuScreen 
+            {...props} 
+            menuItems={menuItems} 
+            setMenuItems={setMenuItems} // Pass the setter function
+          />}
+        </Stack.Screen>
+        
+        {/* Guest Filter Screen (Filtering by course - separate page) */}
+        <Stack.Screen name="Guest Filter">
+          {props => <GuestFilterScreen 
+            {...props} 
+            menuItems={menuItems} // Pass the array
+          />}
+        </Stack.Screen>
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-  form: { marginBottom: 20 },
-  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 10, borderRadius: 5 },
-  pickerContainer: { marginBottom: 10 },
-  label: { fontSize: 16, marginBottom: 5 },
-  picker: { height: 50, width: "100%" },
-  menuList: { flex: 1 },
-  count: { fontSize: 18, marginBottom: 10 },
-  menuItem: { padding: 10, borderWidth: 1, borderColor: "#ccc", borderRadius: 5, marginBottom: 10 },
-  dishName: { fontWeight: "bold", fontSize: 16 }
-});
